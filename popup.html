@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width: 350px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 14px; margin: 0; background: #f8fafc; color: #0f172a; }
+    h2 { margin: 0 0 4px; font-size: 17px; }
+    .sub { color: #64748b; font-size: 11px; margin-bottom: 12px; }
+    .row { display: flex; align-items: center; justify-content: space-between; margin: 8px 0; font-size: 13px; }
+    label { font-weight: 600; }
+    input[type="text"] { width: 100%; box-sizing: border-box; padding: 7px 8px; margin: 4px 0; border: 1px solid #cbd5e1; border-radius: 5px; }
+    button { cursor: pointer; }
+    .add { width: 100%; margin-top: 5px; padding: 8px; border: 0; border-radius: 5px; background: #2563eb; color: white; font-weight: 600; }
+    .download { width: 100%; margin-top: 7px; padding: 7px; border: 1px solid #cbd5e1; border-radius: 5px; background: white; color: #0f172a; font-weight: 600; }
+    .hint { font-size: 11px; color: #64748b; margin-top: 8px; line-height: 1.35; }
+    .section { margin-top: 14px; font-size: 12px; font-weight: 700; display: flex; justify-content: space-between; }
+    #count { color: #64748b; font-weight: 400; }
+    #list { max-height: 260px; overflow-y: auto; margin-top: 6px; border-top: 1px solid #e2e8f0; }
+    .item { display: flex; gap: 8px; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #e2e8f0; font-size: 11px; }
+    .item > span:first-child { overflow-wrap: anywhere; }
+    .source { flex: 0 0 auto; color: #94a3b8; font-size: 9px; }
+    .remove { flex: 0 0 auto; border: 1px solid #cbd5e1; background: white; border-radius: 4px; padding: 3px 6px; font-size: 10px; }
+    #status { min-height: 16px; margin-top: 7px; text-align: center; color: #16a34a; font-size: 11px; }
+    code { font-size: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Italian Immersion</h2>
+  <div class="sub">Reinforce vocabulary you've already learned while browsing.</div>
+
+  <div class="row">
+    <label for="enabled">Run on webpages</label>
+    <input id="enabled" type="checkbox">
+  </div>
+
+  <div class="row">
+    <label for="highlight">Show learning hints</label>
+    <input id="highlight" type="checkbox">
+  </div>
+  <div class="hint">Off by default. When enabled, replacements show the original English word on hover.</div>
+
+  <div class="section">Add a word</div>
+  <input id="italian" type="text" placeholder="Italian, e.g. spesso">
+  <input id="english" type="text" placeholder="English, e.g. often">
+  <button id="add" class="add">Add</button>
+  <div class="hint">Additions are saved immediately. Use Download CSV when you want to merge them into your master file.</div>
+
+  <button id="download" class="download">Download CSV</button>
+  <div class="hint">The download contains every CSV entry plus any words added in this popup. Nothing is silently removed or corrected.</div>
+
+  <div class="section"><span>Current vocabulary</span><span id="count"></span></div>
+  <div id="list"></div>
+  <div id="status"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

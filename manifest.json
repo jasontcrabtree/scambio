@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Italian Immersion",
+  "version": "2.1.1",
+  "description": "Reinforce your complete Italian vocabulary list while browsing.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Italian Immersion"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ]
+}
