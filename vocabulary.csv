@@ -6,6 +6,7 @@ puoi ripetere,can you repeat that
 città,city
 chiaro,clear
 difficile,difficult
+faccio,i do
 fare,do
 bevande,drinks
 est,east
@@ -24,15 +25,16 @@ buon giorno,good morning
 arrivederla,goodbye
 chitarra,guitar
 qui,here
-come scusa,how
+come,how
 come stai,how are you
 come lo scrive,how do you write it
 quanti anni hai,how old are you
 come va,how’s it going
+year, anno
+years, anni
 sono,i am
 sto bene,i am fine
-sono,i am/are
-faccio,i do
+sono,are
 ho una domande,i have a question
 abito a londra,i live in london
 parlo un poco lo spagnolo,i speak a little spanish
@@ -47,6 +49,7 @@ mi chiamo,my name is
 bisogno,need
 in,nel
 Nuova Zelanda,new zealand
+nuova,new
 piacere,nice to meet you
 eh,none c’e male, oh, not so bad
 nord,north
@@ -64,12 +67,14 @@ sud,south
 primavera,spring
 stressante, stressful
 estate,summer
-scambio,swap 
+scambio,swap
 di,than
 che,that
-il,the
+il,l'/il/la
 loro,their
 loro erano,they were
+loro sono,they're
+loro,their
 anche se,though
 stanco,tired
 a,to
@@ -99,9 +104,36 @@ perche,why
 con,with
 parola,word
 parole,words
+volere,want
 lavoro,work
-voi,you
+non,won't
+tu,you'll
 tu sei,you are
-tu eri,you were
 tu sei,you're
+tu eri,you were
+voi,you
 ti chiami,your name is
+questo,this
+uno,one
+due,two
+tre,three
+quattro,four
+cinque,five
+sei,six
+sette,seven
+otto,eight
+nove,nine
+dieci,ten
+undici,eleven
+dodici,twelve
+tredici,thirteen
+quattrodici,fourteen
+quindici,fifteen
+sedici,sixteen
+diciasette,seventeen
+diciotto,eighteen
+diciannove,nineteen
+venti,twenty
+fatto,done
+suo,it's
+ma,but
