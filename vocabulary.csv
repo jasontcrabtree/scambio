@@ -18,7 +18,7 @@ lei,formal you
 di dove,from where
 a gonfie vele,full sail ahead
 divertente,fun
-vada la massimmo,go full throttle
+vada al massimo,go full throttle
 buon pomeriggio,good afternoon
 buona sera,good evening
 buon giorno,good morning
@@ -30,12 +30,12 @@ come stai,how are you
 come lo scrive,how do you write it
 quanti anni hai,how old are you
 come va,how’s it going
-year, anno
-years, anni
+anno,year
+anni,years
 sono,i am
 sto bene,i am fine
 sono,are
-ho una domande,i have a question
+ho una domanda,i have a question
 abito a londra,i live in london
 parlo un poco lo spagnolo,i speak a little spanish
 sono,i'm
@@ -51,11 +51,11 @@ in,nel
 Nuova Zelanda,new zealand
 nuova,new
 piacere,nice to meet you
-eh,none c’e male, oh, not so bad
+eh, non c’è male,oh, not so bad
 nord,north
 spesso,often
 su,on
-a voce alta,outloud
+a voce alta,out loud
 per favore,please
 domande,questions
 pronto,ready
@@ -65,7 +65,7 @@ lei,she/formal you
 mi dispiace,sorry
 sud,south
 primavera,spring
-stressante, stressful
+stressante,stressful
 estate,summer
 scambio,swap
 di,than
@@ -74,7 +74,6 @@ il,l'/il/la
 loro,their
 loro erano,they were
 loro sono,they're
-loro,their
 anche se,though
 stanco,tired
 a,to
@@ -91,16 +90,16 @@ ovest,west
 cosa,what
 che significa,what does it mean
 che lingue parli,what languages do you speak
-qual e it tuo indirizzo,what’s your address
-qual it tuo numero di telefono,what’s your phone number
-e il suo numero di telefono,what’s your telephone number
+qual è il tuo indirizzo,what’s your address
+qual è il tuo numero di telefono,what’s your phone number
+qual è il suo numero di telefono,what’s your telephone number
 quando,when
 dove,where
 di dove sei,where are you from
 dove abiti,where do you live
 mentre,while
 chi,who
-perche,why
+perché,why
 con,with
 parola,word
 parole,words
@@ -127,13 +126,19 @@ dieci,ten
 undici,eleven
 dodici,twelve
 tredici,thirteen
-quattrodici,fourteen
+quattordici,fourteen
 quindici,fifteen
 sedici,sixteen
-diciasette,seventeen
+diciassette,seventeen
 diciotto,eighteen
 diciannove,nineteen
 venti,twenty
 fatto,done
 suo,it's
 ma,but
+tua,your
+bene,good
+queste,these
+cattivo,bad
+nella,in
+noi,we

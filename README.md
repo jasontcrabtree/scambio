@@ -1,40 +1,34 @@
-# Italian Immersion 2.1
+# Scambio 2.2.3
 
-A local-only Chrome extension for contextual reinforcement of Italian vocabulary you have already studied.
+A local-only Chrome extension for Italian vocabulary reinforcement while browsing.
 
-## Vocabulary model
+## Files
 
-`vocabulary.csv` is the canonical master vocabulary file. It intentionally contains every entry supplied by the user, including phrases and repeated meanings. The extension does not curate, correct, or silently remove entries.
+- `vocabulary.csv` is the master vocabulary list. Every row in the latest supplied file, including duplicates and unusual mappings, is preserved exactly. Popup additions are stored locally and included in CSV export. The exported CSV includes the bundled rows plus popup additions. The master CSV is the latest user-supplied vocabulary file (144 rows in version 2.2.3). Its row order, duplicates, capitalization, whitespace, and mappings are preserved as supplied.
+- `grammar.csv` is separate grammar metadata for a limited, explicit set of Italian nouns and adjectives. Edit it independently; it does not rewrite or curate the master vocabulary.
+- `grammar-engine.js` performs conservative, local phrase replacement and basic agreement.
+- No server, LLM, external API, telemetry, or remote dependency is used.
 
-You can:
+## Grammar-aware behaviour
 
-- edit `vocabulary.csv` manually;
-- add entries from the popup, which are saved immediately;
-- click **Download CSV** to export the complete current list, including popup additions;
-- transfer the CSV between computers.
+- Recognises supported patterns such as `the city`, `a city`, `the difficult city`, and applies a known noun's article and a known adjective's agreement together.
+- Handles common definite articles (`il`, `lo`, `la`, `l'`, `i`, `gli`, `le`) and indefinite articles (`un`, `uno`, `una`, `un'`) for dictionary entries.
+- Does not translate isolated English articles, prepositions, or conjunctions such as `the`, `a`, `in`, `to`, `for`, `and`, or `with`; these are too context-dependent for reliable word-for-word substitution.
+- Adjectives that require agreement are only replaced in a supported noun phrase. Unknown grammar is left alone rather than guessed.
+- Skips code, preformatted text, form controls, buttons, and editable areas to protect technical work content.
+- Grammar coverage is deliberately limited. This is not a sentence translator; supported phrases will be translated and other text may remain partly English.
 
-When you manually change the bundled CSV, click **Reload** for the extension on `chrome://extensions`. You do not need to refresh individual webpages.
+## Install or update
 
-## Behaviour
+1. Unzip the archive.
+2. Open `chrome://extensions` and enable Developer mode.
+3. Click **Load unpacked** and select the `scambio` folder. For an existing unpacked installation, select **Reload** on its extension card.
+4. Reload the extension itself after editing bundled CSV files. Open webpages do not need to be manually refreshed for popup vocabulary/settings changes.
 
-- Enabled by default.
-- New pages are processed automatically.
-- Existing open pages receive vocabulary/settings changes without a page refresh.
-- Dynamically inserted page content is observed and processed.
-- Highlighting/learning hints are optional and off by default.
-- The first CSV entry wins when multiple rows have exactly the same English meaning for runtime replacement. All rows remain visible/exportable.
-- Inputs, textareas, contenteditable areas, scripts, styles, code and preformatted blocks are skipped.
-- No LLM, backend, account, external API or telemetry.
+## Vocabulary
 
-## Install
+`vocabulary.csv` uses `Italian,English` columns. The extension preserves all rows in the popup and export. When duplicate English meanings exist, the first row wins at runtime. Download CSV includes bundled rows plus popup additions.
 
-1. Unzip this folder.
-2. Open `chrome://extensions`.
-3. Enable **Developer mode**.
-4. Click **Load unpacked**.
-5. Select the `italian-immersion-best` folder.
-6. The extension starts enabled.
+## Known limitation
 
-## Updating the master CSV
-
-Edit `vocabulary.csv`, save it, then click **Reload** on the extension in `chrome://extensions`. The extension will load the updated file on new pages and apply it to existing pages without requiring those pages to be refreshed.
+This version uses explicit rules rather than an Italian NLP package. I assessed `it-compromise`; it is a small, basic rule-based POS tagger, not a reliable agreement or syntax engine. It is not bundled until its incremental value can be demonstrated against a test corpus. Grammar metadata and the replacement rules are kept local and auditable.

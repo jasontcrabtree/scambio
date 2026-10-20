@@ -1,9 +1,10 @@
 const VOCABULARY_FILE = 'vocabulary.csv';
+const GRAMMAR_FILE = 'grammar.csv';
 
-async function loadBundledVocabulary() {
-  const response = await fetch(chrome.runtime.getURL(VOCABULARY_FILE));
-  if (!response.ok) throw new Error(`Could not load ${VOCABULARY_FILE}`);
-  return parseVocabulary(await response.text());
+async function loadCsvFile(file) {
+  const response = await fetch(chrome.runtime.getURL(file));
+  if (!response.ok) throw new Error(`Could not load ${file}`);
+  return response.text();
 }
 
 function parseVocabulary(text) {
@@ -20,10 +21,19 @@ function parseVocabulary(text) {
   return entries;
 }
 
+function parseGrammar(text) {
+  const [headerLine, ...lines] = text.split(/\r?\n/);
+  if (!headerLine) return [];
+  const headers = headerLine.split(',').map(x => x.trim());
+  return lines.filter(line => line.trim() && !line.trim().startsWith('#')).map(line => {
+    const values = line.split(',');
+    return Object.fromEntries(headers.map((key, i) => [key, (values[i] || '').trim()]));
+  }).filter(row => row.english && row.italian && row.partOfSpeech);
+}
+
 function buildReplacements(entries) {
   const replacements = {};
-  // One English phrase can have multiple CSV rows. Keep the first row as the
-  // runtime replacement, while retaining every row in the CSV/UI/export.
+  // Duplicate rows stay in the vocabulary list/export. First row wins at runtime.
   for (const { italian, english } of entries) {
     const key = english.toLocaleLowerCase();
     if (!(key in replacements)) replacements[key] = italian;
@@ -32,11 +42,14 @@ function buildReplacements(entries) {
 }
 
 async function getState() {
-  const bundledEntries = await loadBundledVocabulary();
+  const [vocabularyText, grammarText] = await Promise.all([
+    loadCsvFile(VOCABULARY_FILE), loadCsvFile(GRAMMAR_FILE)
+  ]);
+  const bundledEntries = parseVocabulary(vocabularyText);
+  const grammarEntries = parseGrammar(grammarText);
   const stored = await chrome.storage.local.get({
     enabled: true,
     addedEntries: [],
-    // Compatibility with 2.1's object-based additions.
     added: {},
     highlightMode: false
   });
@@ -53,22 +66,22 @@ async function getState() {
     bundledEntries,
     addedEntries,
     allEntries,
-    replacements: buildReplacements(allEntries)
+    replacements: buildReplacements(allEntries),
+    grammarEntries
   };
 }
 
 async function pushStateToTabs() {
   const state = await getState();
   const tabs = await chrome.tabs.query({});
-
   await Promise.all(tabs.map(async tab => {
     if (!tab.id || !tab.url || !/^https?:\/\//i.test(tab.url)) return;
     try {
       await chrome.tabs.sendMessage(tab.id, {
-        type: 'settings-updated',
-        enabled: state.enabled,
+        type: 'settings-updated', enabled: state.enabled,
         highlightMode: state.highlightMode,
-        replacements: state.replacements
+        replacements: state.replacements,
+        grammarEntries: state.grammarEntries
       });
     } catch (_) {}
   }));
@@ -76,11 +89,7 @@ async function pushStateToTabs() {
 
 chrome.runtime.onInstalled.addListener(async details => {
   if (details.reason === 'install') {
-    await chrome.storage.local.set({
-      enabled: true,
-      addedEntries: [],
-      highlightMode: false
-    });
+    await chrome.storage.local.set({ enabled: true, addedEntries: [], highlightMode: false });
   }
 });
 
@@ -89,10 +98,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     getState().then(sendResponse).catch(error => sendResponse({ error: error.message }));
     return true;
   }
-
   if (message?.type === 'settings-changed') {
-    pushStateToTabs()
-      .then(() => sendResponse({ ok: true }))
+    pushStateToTabs().then(() => sendResponse({ ok: true }))
       .catch(error => sendResponse({ ok: false, error: error.message }));
     return true;
   }
