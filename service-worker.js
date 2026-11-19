@@ -1,3 +1,4 @@
+importScripts('learning.js');
 const VOCABULARY_FILE = 'vocabulary.csv';
 const GRAMMAR_FILE = 'grammar.csv';
 
@@ -8,17 +9,8 @@ async function loadCsvFile(file) {
 }
 
 function parseVocabulary(text) {
-  const entries = [];
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
-    const comma = line.indexOf(',');
-    if (comma === -1) continue;
-    const italian = line.slice(0, comma).trim();
-    const english = line.slice(comma + 1).trim();
-    if (italian && english) entries.push({ italian, english });
-  }
-  return entries;
+  return ScambioLearning.parseCsv(text).filter(row => row.length === 2 && row.every(s => s.trim()))
+    .map(([italian, english]) => ({ italian, english }));
 }
 
 function parseGrammar(text) {
@@ -32,7 +24,7 @@ function parseGrammar(text) {
 }
 
 function buildReplacements(entries) {
-  const replacements = {};
+  const replacements = Object.create(null);
   // Duplicate rows stay in the vocabulary list/export. First row wins at runtime.
   for (const { italian, english } of entries) {
     const key = english.toLocaleLowerCase();
@@ -51,7 +43,8 @@ async function getState() {
     enabled: true,
     addedEntries: [],
     added: {},
-    highlightMode: false
+    highlightMode: false,
+    trackDomains: false
   });
 
   let addedEntries = Array.isArray(stored.addedEntries) ? stored.addedEntries : [];
@@ -63,6 +56,7 @@ async function getState() {
   return {
     enabled: Boolean(stored.enabled),
     highlightMode: Boolean(stored.highlightMode),
+    trackDomains: Boolean(stored.trackDomains),
     bundledEntries,
     addedEntries,
     allEntries,
@@ -80,6 +74,7 @@ async function pushStateToTabs() {
       await chrome.tabs.sendMessage(tab.id, {
         type: 'settings-updated', enabled: state.enabled,
         highlightMode: state.highlightMode,
+        trackDomains: state.trackDomains,
         replacements: state.replacements,
         grammarEntries: state.grammarEntries
       });
@@ -91,6 +86,55 @@ chrome.runtime.onInstalled.addListener(async details => {
   if (details.reason === 'install') {
     await chrome.storage.local.set({ enabled: true, addedEntries: [], highlightMode: false });
   }
+});
+
+// Serialize read/modify/write operations so simultaneous tabs cannot lose reviews/history.
+let learningWrites = Promise.resolve();
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!['learning-state', 'review', 'encounter', 'clear-domains'].includes(message?.type)) return;
+  const task = async () => {
+    const state = await getState();
+    const cards = ScambioLearning.cards(state.allEntries);
+    const saved = await chrome.storage.local.get({ reviews: {}, domains: {} });
+    const internal = !sender.tab && sender.url?.startsWith(chrome.runtime.getURL(''));
+    if (message.type === 'learning-state') {
+      if (!internal) throw new Error('Extension page required');
+      return { ...saved, cards, trackDomains: state.trackDomains, grammarEntries: state.grammarEntries };
+    }
+    if (message.type === 'review') {
+      if (!internal || !cards.some(c => c.id === message.id)) throw new Error('Unknown card');
+      saved.reviews[message.id] = ScambioLearning.review(saved.reviews[message.id], message.outcome);
+      await chrome.storage.local.set({ reviews: saved.reviews });
+    }
+    if (message.type === 'clear-domains') {
+      if (!internal) throw new Error('Extension page required');
+      await chrome.storage.local.set({ domains: {} });
+    }
+    if (message.type === 'encounter' && state.enabled && state.trackDomains && sender.tab && !sender.tab.incognito && sender.frameId === 0) {
+      const url = new URL(sender.url);
+      if (!['http:', 'https:'].includes(url.protocol)) return { ok: true };
+      const domain = url.hostname;
+      const key = JSON.stringify(domain);
+      const record = saved.domains[key] || { hostname: domain, words: {}, lastSeen: 0 };
+      const requested = new Set(Array.isArray(message.english) ? message.english.slice(0, 1000) : []);
+      const now = Date.now();
+      for (const card of cards) {
+        if (requested.has(card.english.toLocaleLowerCase()) && state.replacements[card.english.toLocaleLowerCase()] === card.italian) {
+          record.words[card.id] = now;
+        }
+      }
+      if (!Object.keys(record.words).length) return { ok: true };
+      record.lastSeen = now;
+      saved.domains[key] = record;
+      // Bounded history: keep the 50 most recently encountered hostnames.
+      const domains = Object.fromEntries(Object.entries(saved.domains).sort((a, b) => b[1].lastSeen - a[1].lastSeen).slice(0, 50));
+      await chrome.storage.local.set({ domains });
+    }
+    return { ok: true };
+  };
+  learningWrites = learningWrites.then(task, task);
+  learningWrites.then(sendResponse, error => sendResponse({ error: error.message }));
+  return true;
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

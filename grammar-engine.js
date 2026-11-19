@@ -40,9 +40,14 @@
       : (noun.number === 'plural' ? 'masculinePlural' : 'masculineSingular');
     return adjective[key] || adjective.italian;
   }
-  function replaceText(text, replacements, grammarEntries) {
-    const nouns = grammarEntries.filter(x => x.partOfSpeech === 'noun');
-    const adjectives = grammarEntries.filter(x => x.partOfSpeech === 'adjective');
+  function replaceText(text, replacements, grammarEntries, onMatch = () => {}) {
+    // Metadata may describe a word, but cannot introduce vocabulary absent from the list.
+    const active = grammarEntries.filter(x => replacements[x.english.toLocaleLowerCase()] === x.italian);
+    const nouns = active.filter(x => x.partOfSpeech === 'noun');
+    const adjectives = active.filter(x => x.partOfSpeech === 'adjective');
+    const tokens = value => value.toLocaleLowerCase().match(/[\p{L}\p{M}]+/gu) || [];
+    const allowed = new Set(Object.values(replacements).flatMap(tokens));
+    const approved = value => tokens(value).every(word => allowed.has(word));
     const protectedWords = new Set(adjectives.map(x => x.english.toLocaleLowerCase()));
     const patterns = [];
     const protectedChunks = [];
@@ -68,6 +73,7 @@
       for (const adj of adjectives) {
         const a = escapeRegExp(adj.english);
         patterns.push({
+          entries: [noun.english, adj.english],
           source: `\\b(?:the|a|an)\\s+${a}\\s+${n}\\b`,
           replace: match => {
             const parts = match.match(/^(the|a|an)\s+(.*?)\s+(.*)$/i);
@@ -79,8 +85,15 @@
             return preserveCase(match, `${articleIt}${articleIt.endsWith("'") ? '' : ' '}${noun.italian} ${adjectiveForm(adj, noun)}`);
           }
         });
+        // Explicit adjective + noun phrases, including plural nouns supplied in the CSV.
+        patterns.push({
+          entries: [noun.english, adj.english],
+          source: `\\b${a}\\s+${n}\\b`,
+          replace: match => preserveCase(match, `${noun.italian} ${adjectiveForm(adj, noun)}`)
+        });
       }
       patterns.push({
+        entries: [noun.english],
         source: `\\b(?:the|a|an)\\s+${n}\\b`,
         replace: match => {
           const articleEn = match.trim().split(/\s+/)[0].toLocaleLowerCase();
@@ -96,7 +109,7 @@
       .filter(([english]) => english.includes(' '))
       .sort((a, b) => b[0].length - a[0].length);
     for (const [english, italian] of phraseEntries) {
-      patterns.push({ source: `\\b${escapeRegExp(english)}\\b`, replace: match => preserveCase(match, italian) });
+      patterns.push({ entries: [english], source: `\\b${escapeRegExp(english)}\\b`, replace: match => preserveCase(match, italian) });
     }
 
     const singleEntries = Object.entries(replacements)
@@ -105,7 +118,7 @@
       .filter(([english]) => !protectedWords.has(english.toLocaleLowerCase()))
       .sort((a, b) => b[0].length - a[0].length);
     for (const [english, italian] of singleEntries) {
-      patterns.push({ source: `\\b${escapeRegExp(english)}\\b`, replace: match => preserveCase(match, italian) });
+      patterns.push({ entries: [english], source: `\\b${escapeRegExp(english)}\\b`, replace: match => preserveCase(match, italian) });
     }
 
     // One combined pass avoids repeatedly scanning each text node with hundreds of regexes.
@@ -116,7 +129,11 @@
         const matched = Object.keys(groups).find(key => groups[key] !== undefined);
         if (!matched) return args[0];
         const index = Number(matched.slice(1));
-        return patterns[index].replace(args[0]);
+        const pattern = patterns[index];
+        const output = pattern.replace(args[0]);
+        if (!approved(output)) return args[0];
+        if (output !== args[0]) onMatch(pattern.entries.map(e => e.toLocaleLowerCase()));
+        return output;
       });
     }
     text = text.replace(/\uE000(\d+)\uE001/g, (_, index) => protectedChunks[Number(index)]);

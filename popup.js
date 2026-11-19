@@ -84,7 +84,7 @@ addEl.onclick = async () => {
 
 function downloadCsv() {
   const csv = state.allEntries
-    .map(({ italian, english }) => `${italian},${english}`)
+    .map(({ italian, english }) => `${ScambioLearning.csvField(italian)},${ScambioLearning.csvField(english)}`)
     .join('\n') + '\n';
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -108,3 +108,12 @@ function showStatus(message) {
 }
 
 getState();
+
+let currentWindowId;
+chrome.windows.getCurrent().then(window => {
+  currentWindowId = window.id;
+  document.getElementById('practice').disabled = false;
+}).catch(error => showStatus(error.message));
+document.getElementById('practice').onclick = () => {
+  chrome.sidePanel.open({ windowId: currentWindowId }).catch(error => showStatus(error.message));
+};

@@ -1,10 +1,10 @@
-# Scambio 2.2.3
+# Scambio 2.3.0
 
 A local-only Chrome extension for Italian vocabulary reinforcement while browsing.
 
 ## Files
 
-- `vocabulary.csv` is the master vocabulary list. Every row in the latest supplied file, including duplicates and unusual mappings, is preserved exactly. Popup additions are stored locally and included in CSV export. The exported CSV includes the bundled rows plus popup additions. The master CSV is the latest user-supplied vocabulary file (144 rows in version 2.2.3). Its row order, duplicates, capitalization, whitespace, and mappings are preserved as supplied.
+- `vocabulary.csv` is the master vocabulary list. The supplied file is not rewritten. CSV export preserves row order, duplicates and field values (including whitespace), with standard CSV quoting. Popup additions are stored locally and included in export.
 - `grammar.csv` is separate grammar metadata for a limited, explicit set of Italian nouns and adjectives. Edit it independently; it does not rewrite or curate the master vocabulary.
 - `grammar-engine.js` performs conservative, local phrase replacement and basic agreement.
 - No server, LLM, external API, telemetry, or remote dependency is used.
@@ -17,6 +17,25 @@ A local-only Chrome extension for Italian vocabulary reinforcement while browsin
 - Adjectives that require agreement are only replaced in a supported noun phrase. Unknown grammar is left alone rather than guessed.
 - Skips code, preformatted text, form controls, buttons, and editable areas to protect technical work content.
 - Grammar coverage is deliberately limited. This is not a sentence translator; supported phrases will be translated and other text may remain partly English.
+- Supports explicit adjective + noun phrases without an article. Grammar rows are active only when their English/Italian mapping matches the first winning vocabulary row. Generated articles and inflected words must occur as words in the Italian vocabulary fields; unavailable forms leave the matched phrase unchanged. Case may be adapted to the source text.
+
+## Practice and site history
+
+Requires Chrome 116 or later. Reload the extension, refresh existing browsing tabs once to load the new content script, then choose **Open practice panel** in the popup.
+
+- Recall English → Italian, reveal the answer, then choose **Again** or **Knew it**. Cards use only vocabulary rows and popup additions. Exact duplicate pairs share progress; distinct mappings remain separate cards. IDs use the pair's field values, so reordering the CSV preserves progress. Editing either field starts a new card.
+- Due cards appear before new cards. Again schedules 10 minutes later and resets the interval; successive successful reviews use 1, 3, 7, 14, 30 and 60 days, capped at 60. This is a simple fixed schedule, not an adaptive memory model. All new cards are available; there is no daily limit yet.
+- Optional site history records vocabulary actually replaced in the top-level page, deduplicated per document. Only hostnames, vocabulary IDs and last-seen times are stored locally, for the 50 most recent sites. No page paths, titles or text are stored. Incognito and embedded-frame encounters are ignored. An encounter means a replacement occurred, not that the user read it.
+- Choose a hostname in the panel to review words encountered there. Clearing site history leaves review progress intact; disabling recording keeps existing history. New encounters can repopulate cleared history while recording is enabled.
+- No sync or server is involved. Removing the extension clears local review progress. CSV export exports vocabulary, not review history.
+
+## Learning the implementation
+
+`learning.js` contains pure CSV and scheduling functions. `service-worker.js` owns review/history writes and serializes updates from multiple extension pages. `sidepanel.js` renders cards and sends review decisions to the worker. `grammar-engine.js` reports only accepted replacements to `content.js`, which batches encounter IDs. Settings changes restore retained original text before applying the updated rules.
+
+Run `node --test tests/*.test.cjs` (Node 20+) for CSV, scheduling, vocabulary guards and worker messaging/storage tests.
+
+Manual Chrome check: open the panel, reveal/rate a card, close/reopen it, and verify progress persists. Enable site history, browse a page containing a supported word, wait a moment and reopen the panel to filter by that hostname. Verify private windows do not add history. Disable webpage replacements to restore original text. Exercise both light and dark mode and a narrow panel.
 
 ## Install or update
 
