@@ -95,7 +95,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const task = async () => {
     const state = await getState();
     const cards = ScambioLearning.cards(state.allEntries);
-    const saved = await chrome.storage.local.get({ reviews: {}, domains: {} });
+    const saved = await chrome.storage.local.get({ reviews: {}, domains: {}, encounteredWords: {} });
+    // Preserve eligibility from optional history recorded before encounteredWords existed.
+    let migrated = false;
+    for (const domain of Object.values(saved.domains)) for (const [id, seen] of Object.entries(domain.words)) {
+      if (!saved.encounteredWords[id]) { saved.encounteredWords[id] = seen; migrated = true; }
+    }
+    if (migrated) await chrome.storage.local.set({ encounteredWords: saved.encounteredWords });
     const internal = !sender.tab && sender.url?.startsWith(chrome.runtime.getURL(''));
     if (message.type === 'learning-state') {
       if (!internal) throw new Error('Extension page required');
@@ -110,7 +116,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (!internal) throw new Error('Extension page required');
       await chrome.storage.local.set({ domains: {} });
     }
-    if (message.type === 'encounter' && state.enabled && state.trackDomains && sender.tab && !sender.tab.incognito && sender.frameId === 0) {
+    if (message.type === 'encounter' && state.enabled && sender.tab && !sender.tab.incognito && sender.frameId === 0) {
       const url = new URL(sender.url);
       if (!['http:', 'https:'].includes(url.protocol)) return { ok: true };
       const domain = url.hostname;
@@ -121,9 +127,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       for (const card of cards) {
         if (requested.has(card.english.toLocaleLowerCase()) && state.replacements[card.english.toLocaleLowerCase()] === card.italian) {
           record.words[card.id] = now;
+          saved.encounteredWords[card.id] = now;
         }
       }
       if (!Object.keys(record.words).length) return { ok: true };
+      await chrome.storage.local.set({ encounteredWords: saved.encounteredWords });
+      if (!state.trackDomains) return { ok: true };
       record.lastSeen = now;
       saved.domains[key] = record;
       // Bounded history: keep the 50 most recently encountered hostnames.

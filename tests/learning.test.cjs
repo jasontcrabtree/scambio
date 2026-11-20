@@ -4,6 +4,14 @@ const fs = require('node:fs');
 require('../learning.js');
 require('../grammar-engine.js');
 const L = globalThis.ScambioLearning;
+test('page queue never falls back to all vocabulary; due queue requires encounter and due date', () => {
+  const cards = ['page', 'past', 'manual', 'future', 'new'].map(id => ({ id }));
+  const reviews = { past: { due: 10 }, manual: { due: 5 }, future: { due: 200 } };
+  assert.deepEqual(L.queue(cards, reviews, 'page', [], [], 100).ready, []);
+  assert.deepEqual(L.queue(cards, reviews, 'page', ['page'], [], 100).ready.map(c => c.id), ['page']);
+  assert.deepEqual(L.queue(cards, reviews, 'due', [], ['past', 'future', 'new'], 100).ready.map(c => c.id), ['past']);
+  assert.equal(L.queue(cards, reviews, 'all', [], [], 100).eligible.length, 5);
+});
 test('CSV preserves quoted commas, quotes, newlines, whitespace and duplicates', () => {
   const rows = [['eh, non male', 'oh, not bad'], ['a"b', 'line\nbreak'], [' a ', 'b'], [' a ', 'b']];
   const csv = rows.map(r => r.map(L.csvField).join(',')).join('\r\n');

@@ -27,5 +27,12 @@
       reviewedAt: now, reviews: (previous?.reviews || 0) + 1 };
   }
   const csvField = value => /[",\r\n]/.test(value) ? '"' + value.replaceAll('"', '""') + '"' : value;
-  globalThis.ScambioLearning = { parseCsv, entryId, cards, review, csvField };
+  function queue(cards, reviews, mode, pageIds = [], encounteredIds = [], now = Date.now()) {
+    const page = new Set(pageIds), encountered = new Set(encounteredIds);
+    const eligible = cards.filter(c => mode === 'all' || (mode === 'page' ? page.has(c.id) : encountered.has(c.id)));
+    const due = eligible.filter(c => reviews[c.id]?.due <= now).sort((a,b) => reviews[a.id].due - reviews[b.id].due);
+    const fresh = mode === 'due' ? [] : eligible.filter(c => !reviews[c.id]);
+    return { eligible, due, fresh, ready: [...due, ...fresh] };
+  }
+  globalThis.ScambioLearning = { parseCsv, entryId, cards, review, csvField, queue };
 })();

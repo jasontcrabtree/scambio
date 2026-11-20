@@ -8,7 +8,6 @@
   let replacements = {};
   let grammarEntries = [];
   let mutationTimer = null;
-  let trackDomains = false;
   let encounterTimer = null;
   const encountered = new Set();
   const pending = new Set();
@@ -16,7 +15,7 @@
   const pendingRoots = new Set();
 
   function recordMatch(words) {
-    if (!trackDomains || window !== window.top) return;
+    if (window !== window.top) return;
     for (const word of words) if (!encountered.has(word)) { pending.add(word); encountered.add(word); }
     if (!pending.size || encounterTimer) return;
     encounterTimer = setTimeout(() => {
@@ -38,11 +37,15 @@
     const previous = changedNodes.get(node);
     if (previous && node.nodeValue === previous.output) return;
     const original = node.nodeValue;
-    const output = globalThis.ScambioGrammar.replaceText(original, replacements, grammarEntries, recordMatch);
+    const words = new Set();
+    const output = globalThis.ScambioGrammar.replaceText(original, replacements, grammarEntries, matches => {
+      matches.forEach(word => words.add(word));
+      recordMatch(matches);
+    });
     if (output === original) return;
     if (!highlightMode) {
       node.nodeValue = output;
-      changedNodes.set(node, { original, output });
+      changedNodes.set(node, { original, output, words: [...words] });
       return;
     }
     // Hint mode wraps the translated output and retains the original text in its title.
@@ -54,7 +57,7 @@
     span.style.borderRadius = '3px';
     span.style.backgroundColor = 'rgba(37, 99, 235, 0.08)';
     node.parentNode?.replaceChild(span, node);
-    changedNodes.set(span, { original, output });
+    changedNodes.set(span, { original, output, words: [...words] });
   }
   function scan(root = document.body) {
     if (!enabled || !root) return;
@@ -78,16 +81,25 @@
     }
     changedNodes.clear();
     enabled = Boolean(data.enabled);
-    trackDomains = Boolean(data.trackDomains);
-    if (!trackDomains) { pending.clear(); encountered.clear(); }
+    pending.clear(); encountered.clear();
     highlightMode = Boolean(data.highlightMode);
     replacements = data.replacements || {};
     grammarEntries = Array.isArray(data.grammarEntries) ? data.grammarEntries : [];
     if (enabled) scan();
   }
   chrome.runtime.sendMessage({ type: 'get-settings' }).then(applySettings).catch(() => {});
-  chrome.runtime.onMessage.addListener(message => {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === 'settings-updated') applySettings(message);
+    if (message?.type === 'page-words') {
+      const words = new Set();
+      if (enabled) for (const [node, value] of changedNodes) {
+        if (node.isConnected && (node.nodeType === Node.TEXT_NODE ? node.nodeValue : node.textContent) === value.output) {
+          value.words.forEach(word => words.add(word));
+        }
+      }
+      // Page identity is transient and is never written to storage.
+      sendResponse({ english: [...words], pageKey: `${performance.timeOrigin}:${location.href}`, enabled });
+    }
   });
   new MutationObserver(mutations => {
     for (const mutation of mutations) {

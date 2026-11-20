@@ -26,7 +26,9 @@ Requires Chrome 116 or later. Reload the extension, refresh existing browsing ta
 - Recall English → Italian, reveal the answer, then choose **Again** or **Knew it**. Cards use only vocabulary rows and popup additions. Exact duplicate pairs share progress; distinct mappings remain separate cards. IDs use the pair's field values, so reordering the CSV preserves progress. Editing either field starts a new card.
 - Due cards appear before new cards. Again schedules 10 minutes later and resets the interval; successive successful reviews use 1, 3, 7, 14, 30 and 60 days, capped at 60. This is a simple fixed schedule, not an adaptive memory model. All new cards are available; there is no daily limit yet.
 - Optional site history records vocabulary actually replaced in the top-level page, deduplicated per document. Only hostnames, vocabulary IDs and last-seen times are stored locally, for the 50 most recent sites. No page paths, titles or text are stored. Incognito and embedded-frame encounters are ignored. An encounter means a replacement occurred, not that the user read it.
-- Choose a hostname in the panel to review words encountered there. Clearing site history leaves review progress intact; disabling recording keeps existing history. New encounters can repopulate cleared history while recording is enabled.
+- **This page** is the default: new/due words replaced in the active tab, never the full vocabulary as a fallback. The panel follows tab changes and polls every three seconds for dynamic content. Removed or externally changed replacement nodes are excluded. Paused/restricted/unrefreshed pages show an empty state.
+- **Due for review** shows only previously encountered words with a saved review that is due. **All vocabulary** is the explicit manual practice mode. Reviewing a word only in All vocabulary does not make it eligible for the encountered-word queue until it is encountered while browsing.
+- Encountered word IDs and last-seen times are saved locally even with site history disabled; page addresses are not persisted. Existing site history is migrated into this eligibility set. Site history remains opt-in and supplies site labels on cards. Clearing site history keeps encountered-word eligibility and review progress; disabling site recording keeps existing history.
 - No sync or server is involved. Removing the extension clears local review progress. CSV export exports vocabulary, not review history.
 
 ## Learning the implementation
@@ -35,7 +37,7 @@ Requires Chrome 116 or later. Reload the extension, refresh existing browsing ta
 
 Run `node --test tests/*.test.cjs` (Node 20+) for CSV, scheduling, vocabulary guards and worker messaging/storage tests.
 
-Manual Chrome check: open the panel, reveal/rate a card, close/reopen it, and verify progress persists. Enable site history, browse a page containing a supported word, wait a moment and reopen the panel to filter by that hostname. Verify private windows do not add history. Disable webpage replacements to restore original text. Exercise both light and dark mode and a narrow panel.
+Manual Chrome check: open the panel on a page with supported words and confirm only those appear. Switch to a different tab or a restricted page and verify the old cards disappear. Reveal/rate a card, close/reopen the panel, and verify progress persists. Due for review should contain the encountered card once its interval expires, but exclude cards only practised manually. Verify private windows do not add encounter or site history. Disable webpage replacements to restore original text. Exercise both light and dark mode and a narrow panel.
 
 ## Install or update
 
